@@ -1,10 +1,13 @@
 import {
+  ActivityIcon,
   CheckCircleIcon,
   ClockIcon,
+  SendIcon,
   Share2Icon,
   TrendingUpIcon,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { dummyAccountsData, dummyPostsData } from "../assets/assets";
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
@@ -13,6 +16,55 @@ const Dashboard = () => {
     connectedAccounts: 0,
   });
   const [activities, setActivities] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const [postsRes, accountsRes] = [
+          { data: dummyPostsData },
+          { data: dummyAccountsData },
+        ];
+
+        const posts = postsRes.data;
+        setStats({
+          scheduled: posts.filter((post: any) => post.status === "scheduled")
+            .length,
+          published: posts.filter((post: any) => post.status === "published")
+            .length,
+          connectedAccounts: accountsRes.data.filter(
+            (a: any) => a.status === "connected",
+          ).length,
+        });
+        // Build the feed from the source of truth used by the published-post
+        // counter. The activity log can be incomplete, which caused the two
+        // sections to show different totals.
+        const publishedActivities = posts
+          .filter((post: any) => post.status === "published")
+          .sort(
+            (a: any, b: any) =>
+              new Date(b.updatedAt ?? b.createdAt).getTime() -
+              new Date(a.updatedAt ?? a.createdAt).getTime(),
+          )
+          .map((post: any) => ({
+            _id: post._id,
+            description: `Published post to ${post.platforms.join(", ")}`,
+            createdAt: post.updatedAt ?? post.createdAt,
+          }));
+
+        setActivities(publishedActivities);
+      } catch (error: any) {
+        console.error("Error fetching dashboard data:", error);
+      }
+    };
+    fetchDashboardData();
+  }, []);
+
+  const getGreeting = () => {
+    const hour = new Date().getHours(); // 0 - 23
+    if (hour >= 5 && hour < 12) return "Good morning! ✌️";
+    if (hour >= 12 && hour < 17) return "Good afternoon! ☀️";
+    return "Good evening! 🌙";
+  };
 
   const statCards = [
     {
@@ -38,7 +90,7 @@ const Dashboard = () => {
     <div className="space-y-8">
       {/* Welcome bar */}
       <div>
-        <h2 className="text-2xl text-slate-900">Good morning! ✌️</h2>
+        <h2 className="text-2xl text-slate-900">{getGreeting()}</h2>
         <p className="text-slate-500 text-sm mt-0.5">
           Here's what's happening with your social accounts today.
         </p>
@@ -64,6 +116,54 @@ const Dashboard = () => {
             <p className="text-sm text-slate-500 mt-1">{card.label}</p>
           </div>
         ))}
+      </div>
+
+      {/* Activity feed */}
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <h2 className="text-slate-900">Recent Activity</h2>
+          <span className="text-sm text-slate-400">
+            {activities.length} events
+          </span>
+        </div>
+
+        {activities.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 px-6">
+            <div className="size-12 bg-slate-100 rounded-xl flex items-center justify-center mb-3">
+              <ActivityIcon className="size-6 text-slate-400 " />
+            </div>
+            <p className="text-slate-500">No activity yet</p>
+            <p className="text-slate-400 text-sm mt-1">
+              Connect accounts and schedule posts to see events here.
+            </p>
+          </div>
+        ) : (
+          <div>
+            {activities.map((activity) => (
+              <div
+                key={activity._id}
+                className="flex items-start gap-4 px-6 py-4 hover:bg-slate-50/50 transition-colors"
+              >
+                <div className="size-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5 bg-zinc-100 text-zinc-600">
+                  <SendIcon className="size-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-600">
+                      Published
+                    </span>
+                    <span className="text-xs text-slate-400 shrink-0">
+                      {new Date(activity.createdAt).toLocaleString()}
+                    </span>
+                  </div>
+                  <p className="text-sm text-slate-600">
+                    {activity.description}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
