@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { dummyGenerationData } from "../assets/assets";
-import { ArrowRightIcon, Loader2Icon } from "lucide-react";
+import {
+  ArrowRightIcon,
+  HistoryIcon,
+  Loader2Icon,
+  Wand2Icon,
+} from "lucide-react";
 
 const AIComposer = () => {
   const [prompt, setPrompt] = useState("");
@@ -17,7 +22,7 @@ const AIComposer = () => {
   const [scheduling, setScheduling] = useState(false);
 
   const fetchGenerations = async () => {
-    setGenerateImage(dummyGenerationData);
+    setGenerations(dummyGenerationData);
   };
 
   useEffect(() => {
@@ -99,6 +104,75 @@ const AIComposer = () => {
       </div>
 
       {/* Ai generated posts */}
+      <div className="space-y-6 pt-12 border-t border-slate-100">
+        <div className="flex items-center justify-between text-slate-600">
+          <div className="flex items-center gap-2">
+            <HistoryIcon className="size-5" />
+            <h2 className="text-xl">Resend Generations</h2>
+          </div>
+          <span className="text-sm text-slate-500 bg-slate-50 px-2">
+            {generations.length} total
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {generations.map((gen) => (
+            <div
+              key={gen._id}
+              className="group bg-white rounded-2xl border border-slate-100 p-5 hover:border-red-200 transition-all
+            relative overflow-hidden"
+            >
+              <div className="flex flex-col h-full space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-400 uppercase tracking-widest">
+                    {new Date(gen.createdAt).toLocaleString()}
+                  </span>
+                  <span className="text-xs text-red-500 bg-red-50 px-2 py-0.5 rounded-md">
+                    {gen.tone}
+                  </span>
+                </div>
+
+                <p className="text-sm text-slate-600 line-clamp-3 leading-relaxed flex-1">
+                  {gen.content}
+                </p>
+
+                {gen.mediaUrl && (
+                  <div className="rounded-xl overflow-hidden border border-slate-50 bg-slate-50">
+                    <img
+                      src={gen.mediaUrl}
+                      alt="Gen"
+                      className="w-full aspect-video object-cover opacity-90 group-hover:opacity-100
+                    transition-opacity"
+                    />
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2 pt-2">
+                  <button
+                    onClick={() => setActiveSchedular(gen)}
+                    className="flex-1 bg-slate-100 hover:bg-red-500 hover:text-white text-slate-600
+                  text-xs py-2.5 rounded-lg transition-all"
+                  >
+                    Schedule Post
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {generations.length === 0 && (
+            <div className="col-span-full py-20 text-center space-y-2">
+              <div className="size-12 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto text-slate-300">
+                <Wand2Icon className="size-6" />
+              </div>
+              <p className="text-slate-400 text-sm">
+                No content generated yet. Try generating some content using the
+                AI.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Schedular Modal */}
     </div>
