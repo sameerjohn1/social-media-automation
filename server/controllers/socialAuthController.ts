@@ -2,6 +2,7 @@ import { Request,Response } from "express";
 import zernio from "../config/zernio.js";
 import { User } from "../models/User.js";
 import { Account } from "../models/Account.js";
+import { AuthRequest } from "../middlewares/authMiddleware.js";
 
 // helper to ensure user has a Zernio Profile
 const getOrCreateZernioProfile=async(user:any):Promise<string>=>{
@@ -38,7 +39,7 @@ const getOrCreateZernioProfile=async(user:any):Promise<string>=>{
 
 
 // Generate OAuth authorization URL
-export const generatedAuthUrl=async(req:Request,res:Response):Promise<void>=>{
+export const generatedAuthUrl=async(req:AuthRequest,res:Response):Promise<void>=>{
     try {
         const {platform}=req.params;
         const profileId=await getOrCreateZernioProfile(req.user);
@@ -70,7 +71,7 @@ export const generatedAuthUrl=async(req:Request,res:Response):Promise<void>=>{
 }
 
 // Sync connected accounts from Zernio into Mongodb
-export const syncAccounts=async(req:Request,res:Response) : Promise<void>=>{
+export const syncAccounts=async(req:AuthRequest,res:Response) : Promise<void>=>{
     try {
  const profileId=await getOrCreateZernioProfile(req.user);
 const result=await zernio.accounts.listAccounts({
@@ -109,9 +110,9 @@ for(const zAccount of zernioAccounts){
     },
     {upsert:true,returnDocument:"after"}
     )
-    syncAccounts.push(account)
+    syncedAccounts.push(account)
 }
-res.json(syncAccounts)
+res.json(syncedAccounts)
 } catch (error:any) {
     res.status(500).json({message:error?.message || "Server error"})
     }
