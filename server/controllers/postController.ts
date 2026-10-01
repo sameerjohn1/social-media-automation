@@ -139,11 +139,52 @@ export const getPosts=async(req:AuthRequest,res:Response):Promise<void>=>{
         
     } catch (error:any) {
         res.status(500).json({ message: "Server error", error: error.message });
-    }
-    
+    }   
 } 
 
 // Schedule Posts
 export const SchedulePosts=async(req:AuthRequest,res:Response):Promise<void>=>{
-    
+    try {
+        const {content,platforms,scheduledFor,status}=req.body;
+        // Parse platforms if it comes as a stringified array from FormData
+        let parsedPlatforms=platforms;
+        if (typeof platforms === "string") {
+            try {
+                parsedPlatforms = JSON.parse(platforms);
+            } catch (e) {
+               parsedPlatforms = platforms.split(",")
+            }
+        }
+
+        let mediaUrl:string | undefined=req.body.mediaUrl;
+        let mediaType: "image" | "video" | undefined = req.body.mediaType;
+
+        if(req.file){
+            const result=await new Promise<any>((resolve,reject)=>{
+                const stream=cloudinary.uploader.upload_stream({folder:"social-posts"},(error,result)=>{
+                    if(error) reject(error);
+                    else resolve(result)
+                    
+            })
+            stream.end(req.file!.buffer)
+        })
+        mediaUrl=result.secure_url;
+        mediaType=result.resource_type === "video" ? "video":"image"
+    }
+
+    const post=await Post.create({
+        user:req.user._id,
+        content,
+        platforms:parsedPlatforms,
+        mediaUrl,
+        mediaType,
+        scheduledFor,
+        status
+    })
+
+    res.status(201).json(post)
+        
+    } catch (error:any) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
 } 
