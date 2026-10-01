@@ -4,6 +4,7 @@ import { GoogleGenAI } from "@google/genai";
 import axios from "axios"
 import cloudinary from "../config/cloudinary.js";
 import { Generation } from "../models/Generation.js";
+import { Post } from "../models/Post.js";
 
 
 
@@ -132,6 +133,13 @@ export const getGenerations=async(req:AuthRequest,res:Response):Promise<void>=>{
 
 // Get Posts
 export const getPosts=async(req:AuthRequest,res:Response):Promise<void>=>{
+    try {
+        const posts=await Post.find({user:req.user._id})
+        res.status(200).json({posts})
+        
+    } catch (error:any) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
     
 } 
 
