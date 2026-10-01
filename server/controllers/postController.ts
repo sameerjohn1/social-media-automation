@@ -3,6 +3,7 @@ import { AuthRequest } from "../middlewares/authMiddleware.js";
 import { GoogleGenAI } from "@google/genai";
 import axios from "axios"
 import cloudinary from "../config/cloudinary.js";
+import { Generation } from "../models/Generation.js";
 
 
 
@@ -10,6 +11,11 @@ import cloudinary from "../config/cloudinary.js";
 export const generatePost = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { prompt, tone, generateImage } = req.body;
+
+        if (!req.user?._id) {
+            res.status(401).json({ message: "Unauthorized" });
+            return;
+        }
 
         if (!prompt || typeof prompt !== "string") {
             res.status(400).json({ message: "Prompt is required" });
@@ -55,7 +61,6 @@ export const generatePost = async (req: AuthRequest, res: Response): Promise<voi
 
         // 2) Image (optional)
         let mediaUrl = "";
-        let mediaType: "image" | "" = "";
 
         if (generateImage) {
             try {
@@ -77,7 +82,6 @@ export const generatePost = async (req: AuthRequest, res: Response): Promise<voi
                     });
 
                     mediaUrl = upload.secure_url;
-                    mediaType = "image";
                 }
             } catch (imgError: any) {
                 // image fail ho to bhi text return ho jaye
@@ -85,7 +89,31 @@ export const generatePost = async (req: AuthRequest, res: Response): Promise<voi
             }
         }
 
-        res.status(200).json({ content, imagePrompt, mediaUrl, mediaType });
+        const mediaType = mediaUrl ? "image" : undefined;
+
+        // 3) Save history (fail ho to bhi user ko result mile)
+        let generationId: string | undefined;
+        try {
+            const generation = await Generation.create({
+                user: req.user._id,
+                prompt,
+                content,
+                mediaUrl: mediaUrl || undefined,
+                mediaType,
+                tone,
+            });
+            generationId = generation._id.toString();
+        } catch (dbError: any) {
+            console.error("Generation save error:", dbError.message);
+        }
+
+        res.status(200).json({
+            id: generationId,
+            content,
+            imagePrompt,
+            mediaUrl,
+            mediaType,
+        });
     } catch (error: any) {
         console.error("Generate post error:", error);
         res.status(500).json({ message: "Failed to generate post", error: error.message });
@@ -94,7 +122,12 @@ export const generatePost = async (req: AuthRequest, res: Response): Promise<voi
 
 // Get Generations
 export const getGenerations=async(req:AuthRequest,res:Response):Promise<void>=>{
-    
+    try {
+        const generation=await Generation.find({user:req.user?._id}).sort({createdAt:-1})
+        res.status(200).json({generations:generation})
+    } catch (error:any) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
 } 
 
 // Get Posts
