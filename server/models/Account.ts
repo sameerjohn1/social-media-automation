@@ -1,8 +1,32 @@
 import mongoose from "mongoose";
 
-const accountSchema=new mongoose.Schema({
+export const accountPlatforms = [
+    "twitter",
+    "linkedin",
+    "facebook",
+    "instagram",
+    "facebook_page",
+    "linkedin_page",
+    "instagram_business",
+] as const;
+
+export type AccountPlatform = (typeof accountPlatforms)[number];
+
+interface AccountDocument {
+    user: mongoose.Types.ObjectId;
+    platform: AccountPlatform;
+    handle: string;
+    zernioAccountId?: string;
+    accessToken?: string;
+    refreshToken?: string;
+    tokenExpiresAt?: Date;
+    status: "connected" | "disconnected";
+    avatarUrl?: string;
+}
+
+const accountSchema=new mongoose.Schema<AccountDocument>({
     user:{type:mongoose.Schema.Types.ObjectId,ref:"User",required:true},
-    platform:{type:String,enum:["twitter","linkedin","facebook","instagram","facebook_fage","linkedin_page","instagram_business"],required:true},
+    platform:{type:String,enum:accountPlatforms,required:true},
     handle:{type:String,required:true},
     zernioAccountId:{type:String},
     accessToken:{type:String},
@@ -12,5 +36,5 @@ const accountSchema=new mongoose.Schema({
     avatarUrl:{type:String}
 },{timestamps:true})
 
-export const Account=mongoose.model("Account",accountSchema)
+export const Account=mongoose.model<AccountDocument>("Account",accountSchema)
 
