@@ -1,22 +1,38 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { MailIcon, LockIcon, ArrowRightIcon, User2Icon } from "lucide-react";
+import { useLoginMutation, useRegisterMutation } from "../features/auth/authApi";
+import { useAppDispatch } from "../app/hooks";
+import { setCredentials } from "../features/auth/authSlice";
 
 export default function Login() {
     const [loginState, setLoginState] = useState(true);
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    const dispatch = useAppDispatch();
+
+    const [login, { isLoading: loginLoading }] = useLoginMutation();
+    const [register, { isLoading: registerLoading }] = useRegisterMutation();
+    const loading = loginLoading || registerLoading;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setLoading(true);
-        setTimeout(() => {
-            setLoading(false);
-            navigate("/dashboard");
-        }, 1000);
+        try {
+            if (loginState) {
+                const res = await login({ email, password }).unwrap();
+                dispatch(setCredentials({ user: { _id: res._id, name: res.name, email: res.email }, token: res.token }));
+                navigate("/dashboard");
+            } else {
+                const res = await register({ name, email, password }).unwrap();
+                dispatch(setCredentials({ user: { _id: res._id, name: res.name, email: res.email }, token: res.token }));
+                navigate("/dashboard");
+            }
+        } catch (err: any) {
+            const msg = err?.data?.message || err?.error || "Something went wrong";
+            alert(msg);
+        }
     };
 
     return (
