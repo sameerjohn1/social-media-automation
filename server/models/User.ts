@@ -5,6 +5,7 @@ const userSchema=new mongoose.Schema({
     password:{ type:String, required:true},
     name:{ type:String, required:true},
     zernioProfileId:{ type:String},
+    tokenVersion:{ type:Number, default:0},
 
 },{timestamps:true});
 

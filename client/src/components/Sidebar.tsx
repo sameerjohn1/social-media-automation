@@ -5,7 +5,11 @@ import {
   UserIcon,
   Wand2Icon,
 } from "lucide-react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "../app/hooks";
+import { logout } from "../features/auth/authSlice";
+import { useLogoutMutation } from "../features/auth/authApi";
+import { api } from "../services/api";
 
 const Sidebar = ({
   isOpen,
@@ -14,11 +18,22 @@ const Sidebar = ({
   isOpen: boolean;
   setIsOpen: (val: boolean) => void;
 }) => {
-  const { logout, user } = {
-    logout: () => {
-      window.location.href = "/";
-    },
-    user: { name: "John Doe", email: "john@gmail.com" },
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const user = useAppSelector((state) => state.auth.user);
+  const [logoutUser, { isLoading: logoutLoading }] = useLogoutMutation();
+
+  const handleLogout = async () => {
+    try {
+      await logoutUser().unwrap();
+    } catch {
+      alert("Logout failed, clearing session locally");
+    } finally {
+      dispatch(logout());
+      dispatch(api.util.resetApiState());
+      setIsOpen(false);
+      navigate("/login");
+    }
   };
 
   const location = useLocation();
@@ -92,12 +107,13 @@ const Sidebar = ({
         </div>
 
         <button
-          onClick={logout}
+          onClick={handleLogout}
+          disabled={logoutLoading}
           className="mt-1 flex items-center gap-2 px-3 py-2 w-full rounded text-sm text-slate-500 hover:bg-red-50 hover:text-red-500
-        transition-all duration-150"
+        transition-all duration-150 disabled:opacity-60"
         >
           <LogInIcon className="size-4" />
-          Sign Out
+          {logoutLoading ? "Signing out..." : "Sign Out"}
         </button>
       </div>
     </div>
