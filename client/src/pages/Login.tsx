@@ -23,11 +23,11 @@ export default function Login() {
             if (loginState) {
                 const res = await login({ email, password }).unwrap();
                 dispatch(setCredentials({ user: { _id: res._id, name: res.name, email: res.email }, token: res.token }));
-                navigate("/dashboard");
+                navigate("/dashboard", { replace: true });
             } else {
                 const res = await register({ name, email, password }).unwrap();
                 dispatch(setCredentials({ user: { _id: res._id, name: res.name, email: res.email }, token: res.token }));
-                navigate("/dashboard");
+                navigate("/dashboard", { replace: true });
             }
         } catch (err: any) {
             const msg = err?.data?.message || err?.error || "Something went wrong";

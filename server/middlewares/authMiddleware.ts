@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response } from "express";
+import { NextFunction, Request, Response } from "express"
 import jwt from "jsonwebtoken"
 import { User } from "../models/User.js";
 
@@ -13,7 +13,16 @@ export const protect=async(req:AuthRequest,res:Response,next:NextFunction)=>{
         try {
              token=req.headers.authorization.split(" ")[1];
             const decoded:any=jwt.verify(token,process.env.JWT_SECRET!);
-            req.user=await User.findById(decoded.id).select("-password");
+            const user=await User.findById(decoded.id).select("-password");
+            if(!user){
+                res.status(401).json({message:"Not authorized, user not found"})
+                return;
+            }
+            if((decoded.tokenVersion ?? 0)!==(user.tokenVersion ?? 0)){
+                res.status(401).json({message:"Session expired, please log in again"})
+                return;
+            }
+            req.user=user
             next()
         } catch (error:any) {
            res.status(401).json({message:error?.message||"Not authorized, token failed"})
