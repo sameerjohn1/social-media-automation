@@ -1,6 +1,5 @@
 import {
   CheckCircleIcon,
-  ExternalLink,
   ExternalLinkIcon,
   XIcon,
 } from "lucide-react";
